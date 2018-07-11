@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 import base64
+import hashlib
 import re
 import requests
 
@@ -64,18 +65,18 @@ def get_security_string():
 
     req = requests.get(url)
     if req.status_code != 200:
-        print("[!] Retieved a {} from {}... exiting".format(req.status_code, url))
+        print("[!] Retrieved a {} from {}... exiting".format(req.status_code, url))
         exit(-1)
     
     # Attempting to parse out the srvstr from the main page.
     try:
-        srvstr = re.findall("var srvstr='(.*?)'",r.text)[0]
+        srvstr = re.findall("var srvstr='(.*?)'",req.text)[0]
     except IndexError:
         print("[!] Failed to find the srvstr... exiting")
         exit(-1)
     
     # This emulates the hexMD5 function from http://fc4.me/fc4.js
-    return hexdigest.md5("\x74\x72\x79\x68\x61\x72\x64\x65\x72" + srvstr).digest()
+    return hashlib.md5("\x74\x72\x79\x68\x61\x72\x64\x65\x72" + srvstr).hexdigest()
 
 
 def get_registration_code(solution):
@@ -86,9 +87,9 @@ def get_registration_code(solution):
                   "securitystring": solution["security_string"]
     }
 
-    res = request.post(url, data=post_data)
-    if res != 200:
-        print("[!] Retieved a {} from {}... exiting".format(res.status_code, url))
+    res = requests.post(url, data=post_data)
+    if res.status_code != 200:
+        print("[!] Retrieved a {} from {}... exiting".format(res.status_code, url))
         exit(-1)
     
     # Attempting to parse out the base64 string
@@ -104,7 +105,7 @@ def get_registration_code(solution):
 
     # Attempting to parse out registration code
     try:
-        solution["registration_code"] = re.findall("Registration Code: (.*?) |", decoded_string)[0]
+        solution["registration_code"] = re.findall("Registration Code: (\d+) ", decoded_string)[0]
     except IndexError:
         print("[!] Failed to find registration code... exiting")
         exit(-1)
@@ -124,8 +125,15 @@ def main(solution):
     solution = get_registration_code(solution)
 
     # memory address where emulation starts
-    em = Emulator(0x1000000, 2 * 1024 * 1024, solution["registration_key"])
+    # Todo: Extract out the final piece
+    em = Emulator(0x00000, 1024 * 1024 * 2 , solution["registration_key"])
     em.run()
+    
+    print("-" * 100)
+    print("\tEmail Address: {}".format(solution["email_address"]))
+    print("\tSecurity String: {}".format(solution["security_string"]))
+    print("\tRegistration Code: {}".format(solution["registration_code"]))
+    print("-" * 100)
 
 
 if __name__ == "__main__":
@@ -135,5 +143,5 @@ if __name__ == "__main__":
     except NameError:
         pass
 
-    main({ "email_address" : input("Enter your email: ") })
+    main({ "email_address" : "bhelms@gamil.com" })
 
