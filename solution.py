@@ -143,5 +143,5 @@ if __name__ == "__main__":
     except NameError:
         pass
 
-    main({ "email_address" : "bhelms@gamil.com" })
+    main({ "email_address" : input("Enter email address for challenge: " })
 
